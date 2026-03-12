@@ -34,13 +34,25 @@ class Argentina():
         for pdf_file in pdf_files:
             result = self.extract_data_from_pdf(pdf_file)
             if result :
-                self.pdf_files_read_correctly.append(os.path.basename(pdf_file))
+                filename = os.path.basename(pdf_file)
+                self.pdf_files_read_correctly.append(filename)
                 data.extend(result)
+                self.move_file_read_correctly(pdf_file, filename)
             else:
                 self.pdf_files_not_read.append(os.path.basename(pdf_file))
 
         if self.pdf_files_read_correctly :
             self.save_to_excel(data, result_excel_file)
+
+
+    def move_file_read_correctly(self, pdf_file, filename):
+        new_directory = os.path.join(os.path.dirname(pdf_file), "files_read_correctly" )
+        os.makedirs(new_directory , exist_ok = True)
+
+        try:
+            os.rename(pdf_file, os.path.join(new_directory, filename))
+        except OSError as e:
+            print(e)
 
 
     def extract_data_from_pdf(self, pdf_path) -> list :
