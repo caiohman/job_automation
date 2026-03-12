@@ -1,5 +1,6 @@
 from PySide6 import QtCore, QtWidgets
 from models.argentina import Argentina
+from presentation.extration_feedback_dialog import ExtrationFeedbackDialog
 
 class Widget(QtWidgets.QWidget):
 
@@ -31,7 +32,9 @@ class Widget(QtWidgets.QWidget):
     @QtCore.Slot()
     def extract(self):
         if self.pdfs_directory != "" and self.result_directory != "":
-            Argentina(self.pdfs_directory, self.result_directory)
+            argentina = Argentina(self.pdfs_directory, self.result_directory)
+            feedback_dialog = ExtrationFeedbackDialog(argentina.pdf_files_read_correctly, argentina.pdf_files_not_read)
+            feedback_dialog.exec()
 
     @QtCore.Slot()
     def find_pdfs_directory(self):

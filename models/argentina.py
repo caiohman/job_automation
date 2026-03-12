@@ -28,19 +28,18 @@ class Argentina():
         result_excel_file = os.path.join(result_directory, "dados_extraidos_argentina.xlsx")
 
         data = []
-        pdf_files_read_correctly = []
-        pdf_files_not_read  = []
+        self.pdf_files_read_correctly = []
+        self.pdf_files_not_read  = []
 
         for pdf_file in pdf_files:
             result = self.extract_data_from_pdf(pdf_file)
             if result :
-                pdf_files_read_correctly.extend(pdf_file)
+                self.pdf_files_read_correctly.append(os.path.basename(pdf_file))
                 data.extend(result)
             else:
-                pdf_files_not_read.extend(pdf_file)
-                print('Pdf file not read: ' + pdf_file) # TODO: show in user interface
+                self.pdf_files_not_read.append(os.path.basename(pdf_file))
 
-        if pdf_files_read_correctly :
+        if self.pdf_files_read_correctly :
             self.save_to_excel(data, result_excel_file)
 
 
