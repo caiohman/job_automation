@@ -2,6 +2,7 @@ import os
 import pdfplumber
 import pandas as pd
 import re
+from decimal import ROUND_UP, Decimal
 
 class Argentina():
 
@@ -44,7 +45,6 @@ class Argentina():
         if self.pdf_files_read_correctly :
             self.save_to_excel(data, result_excel_file)
 
-
     def move_file_read_correctly(self, pdf_file, filename):
         new_directory = os.path.join(os.path.dirname(pdf_file), "files_read_correctly" )
         os.makedirs(new_directory , exist_ok = True)
@@ -53,7 +53,6 @@ class Argentina():
             os.rename(pdf_file, os.path.join(new_directory, filename))
         except OSError as e:
             print(e)
-
 
     def extract_data_from_pdf(self, pdf_path) -> list :
         filename = os.path.basename(pdf_path).split(".")[0]
@@ -87,7 +86,22 @@ class Argentina():
             extracted_data.append(data_row)
             print("Impostos extraídos:", taxes)
 
-        return extracted_data
+        return extracted_data if self.bill_validation(aduana_value, taxes) else []
+
+    def bill_validation(self, aduana_value, taxes) -> bool:
+        try:
+            if aduana_value != "":
+                aduana = Decimal(aduana_value.replace(',', '.')).quantize(Decimal('0.01'), rounding=ROUND_UP)
+            else:
+                aduana = Decimal(0).quantize(Decimal('0.01'), rounding=ROUND_UP)
+
+            for key, value in taxes.items():
+                aduana = (aduana - value)
+
+            return True if aduana == Decimal(0).quantize(Decimal('0.01'), rounding=ROUND_UP) else False
+        except ValueError as e:
+            print(e)
+        return False
 
     def order(self, text):
         order_match = re.search(r'\|\s*([\w\d/-]+)', text)
@@ -129,15 +143,20 @@ class Argentina():
 
             try:
                 value = value.strip().replace('.', '').replace(',', '.')
-                taxes[tax_title] = float(value) if value else 0.0
+
+                if value:
+                    taxes[tax_title] = Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_UP)
+                else:
+                    taxes[tax_title] = Decimal(0).quantize(Decimal('0.01'), rounding=ROUND_UP)
+
             except: # TODO: find suitable Excetion
-                taxes[tax_title] = 0.0
+                taxes[tax_title] = Decimal(0).quantize(Decimal('0.01'), rounding=ROUND_UP)
 
         # Verificação adicional para garantir que todos os impostos necessários existam
         required_taxes = ['(011)', '(061)', '(041)', '(051)']
         for tax in required_taxes:
             if tax not in taxes:
-                taxes[tax] = 0.0
+                taxes[tax] = Decimal(0).quantize(Decimal('0.01'), rounding=ROUND_UP)
 
         return taxes
 
