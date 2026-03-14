@@ -68,8 +68,12 @@ class Argentina():
             order = self.order(text)
             date = self.date(text)
             cotiz = self.cotiz(text)
-            aduana_value = self.aduana(text)
             taxes = self.taxes(text)
+            aduana_value = self.aduana(text, taxes)
+
+            if not aduana_value:
+                return []
+
             custom_broker = self.find_custom_broker(text)
             char_block = filename.split("_")[0]
 
@@ -86,22 +90,19 @@ class Argentina():
             extracted_data.append(data_row)
             print("Impostos extraídos:", taxes)
 
-        return extracted_data if self.bill_validation(aduana_value, taxes) else []
+        return extracted_data
 
-    def bill_validation(self, aduana_value, taxes) -> bool:
+    def taxes_sum(self, taxes) -> Decimal:
         try:
-            if aduana_value != "":
-                aduana = Decimal(aduana_value.replace(',', '.')).quantize(Decimal('0.01'), rounding=ROUND_UP)
-            else:
-                aduana = Decimal(0).quantize(Decimal('0.01'), rounding=ROUND_UP)
+            aduana = Decimal(0).quantize(Decimal('0.01'), rounding=ROUND_UP)
 
             for key, value in taxes.items():
-                aduana = (aduana - value)
+                aduana += value
 
-            return True if aduana == Decimal(0).quantize(Decimal('0.01'), rounding=ROUND_UP) else False
+            return aduana
         except ValueError as e:
             print(e)
-        return False
+        return Decimal(0).quantize(Decimal('0.01'), rounding=ROUND_UP)
 
     def order(self, text):
         order_match = re.search(r'\|\s*([\w\d/-]+)', text)
@@ -116,10 +117,10 @@ class Argentina():
         cotiz_match = re.search(r'Cotiz\s*=\s*([\d.,]+)', text)
         return cotiz_match.group(1) if cotiz_match else ""
 
-    def aduana(self, text):
-        aduana_match = re.search(r'ANAUDA\s*NE\s*ROLAV\s*([\d\.]+,\d{2})', text)
-        aduana_value = aduana_match.group(1).replace('.', '').replace(',', '.') if aduana_match else ""
-        return aduana_value.replace('.', ',') if aduana_value else ""
+    def aduana(self, text, taxes) -> Decimal | None:
+        aduana = self.taxes_sum(taxes)
+        formatted_number = f"{aduana:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return aduana if re.search(r'' + formatted_number + '', text) else None
 
     def taxes(self, text) -> dict:
         # MELHORIA: Nova expressão regular para capturar impostos
