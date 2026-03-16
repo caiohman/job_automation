@@ -6,10 +6,10 @@ class ExtrationFeedbackDialog(QtWidgets.QDialog):
         super().__init__()
 
         pdf_files_read_correctly_dropdown = QtWidgets.QComboBox()
-        pdf_files_read_correctly_dropdown.addItem('Extrated')
+        pdf_files_read_correctly_dropdown.setPlaceholderText('Extrated')
         pdf_files_read_correctly_dropdown.addItems(pdf_files_read_correctly)
         pdf_files_not_read_dropdown = QtWidgets.QComboBox()
-        pdf_files_not_read_dropdown.addItem('Not Extracted')
+        pdf_files_not_read_dropdown.setPlaceholderText('Not Extracted')
         pdf_files_not_read_dropdown.addItems(pdf_files_not_read)
 
         files_list = QtWidgets.QHBoxLayout()
