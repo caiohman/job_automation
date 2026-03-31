@@ -1,5 +1,5 @@
 from PySide6 import QtCore, QtWidgets
-
+from sidom.sidom import Sidom
 
 class LoginDialog(QtWidgets.QDialog):
     def __init__(self) -> None:
@@ -24,5 +24,9 @@ class LoginDialog(QtWidgets.QDialog):
 
     @QtCore.Slot()
     def submit(self):
-        print(self.user_input.text())
-        print(self.password_input.text())
+        username = self.user_input.text()
+        password = self.password_input.text()
+
+        if username != '' and password != '':
+            sidom = Sidom(username, password)
+            sidom.connection()

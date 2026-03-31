@@ -1,29 +1,15 @@
-import xlwings as xw  # type: ignore
-import pyautogui  # type: ignore
 import time
 from selenium import webdriver  # type: ignore
 from selenium.webdriver.common.by import By  # type: ignore
-from selenium.webdriver.support.ui import Select  # type: ignore
 from selenium.webdriver.common.keys import Keys  # type: ignore
 from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
 from selenium.webdriver.support import expected_conditions as EC  # type: ignore
-from selenium.common.exceptions import ElementClickInterceptedException  # type: ignore
-from datetime import datetime
 
 class Sidom():
-    def __init__(self) -> None:
+    def __init__(self, username, password) -> None:
         self.url = "https://app.sidom.io/index.php/acceso"
-        self.username = ""
-        self.password = ""
-
-
-    def get_credential(self, username, password) -> bool:
-        if username != "" and password != "":
-            self.username = username
-            self.password = password
-            return True
-        else:
-            return False
+        self.username = username
+        self.password = password
 
     def connection(self):
         driver = webdriver.Chrome()
