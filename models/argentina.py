@@ -7,17 +7,6 @@ from decimal import ROUND_UP, Decimal
 class Argentina():
 
     def __init__(self, pdf_directory, result_directory) -> None:
-        self.taxes_order = [
-            "(010)",
-            "(011+061+041+051)",
-            "(415)",
-            "(422)",
-            "(424)",
-            "(500)",
-            "(900)",
-            "(417)"
-        ]
-
         self.custom_broker = [
             "BASALDUA MARTIN JORGE",
             "MICUCCI OSVALDO ALFREDO",
@@ -27,10 +16,12 @@ class Argentina():
 
         pdf_files = [os.path.join(pdf_directory, f) for f in os.listdir(pdf_directory) if f.lower().endswith('.pdf')]
         result_excel_file = os.path.join(result_directory, "dados_extraidos_argentina.xlsx")
+        sap_excel_file = os.path.join(result_directory, "sap_argentina.xlsx")
 
         data = []
         self.pdf_files_read_correctly = []
         self.pdf_files_not_read  = []
+        pdfs_read_correctly_quantity = 0
 
         for pdf_file in pdf_files:
             result = self.extract_data_from_pdf(pdf_file)
@@ -39,11 +30,12 @@ class Argentina():
                 self.pdf_files_read_correctly.append(filename)
                 data.extend(result)
                 self.move_file_read_correctly(pdf_file, filename)
+                pdfs_read_correctly_quantity += 1
             else:
                 self.pdf_files_not_read.append(os.path.basename(pdf_file))
 
         if self.pdf_files_read_correctly :
-            self.save_to_excel(data, result_excel_file)
+            self.save_to_excel(data, result_excel_file, pdfs_read_correctly_quantity, sap_excel_file)
 
     def move_file_read_correctly(self, pdf_file, filename):
         new_directory = os.path.join(os.path.dirname(pdf_file), "files_read_correctly" )
@@ -88,7 +80,6 @@ class Argentina():
 
             data_row.update(taxes)
             extracted_data.append(data_row)
-            print("Impostos extraídos:", taxes)
 
         return extracted_data
 
@@ -115,7 +106,9 @@ class Argentina():
 
     def cotiz(self, text):
         cotiz_match = re.search(r'Cotiz\s*=\s*([\d.,]+)', text)
-        return cotiz_match.group(1) if cotiz_match else ""
+        return Decimal(
+            cotiz_match.group(1).strip().replace('.', '').replace(',', '.')).quantize(Decimal('0.01'), rounding=ROUND_UP
+        ) if cotiz_match else ""
 
     def aduana(self, text, taxes) -> Decimal | None:
         aduana = self.taxes_sum(taxes)
@@ -172,44 +165,137 @@ class Argentina():
 
         return custom_broker
 
-    def save_to_excel(self, data, output_file):
-        if not data:
-            print("Nenhum dado para salvar.")
-            return
-
-        df = pd.DataFrame(data)
-
-        # Somar os impostos (011) e (061) e criar uma nova coluna
-        if any(col in df.columns for col in ["(011)", "(061)", "(041)", "(051)"]):
-            # Converter as colunas para numérico, preenchendo valores inválidos com 0
-            df["(011)"] = pd.to_numeric(df["(011)"], errors="coerce").fillna(0) if "(011)" in df.columns else 0
-            df["(061)"] = pd.to_numeric(df["(061)"], errors="coerce").fillna(0) if "(061)" in df.columns else 0
-            df["(041)"] = pd.to_numeric(df["(041)"], errors="coerce").fillna(0) if "(041)" in df.columns else 0
-            df["(051)"] = pd.to_numeric(df["(051)"], errors="coerce").fillna(0) if "(051)" in df.columns else 0
-
-            # Somar os valores das colunas (011), (061) e (041)
-            df["(011+061+041+051)"] = df["(011)"] + df["(061)"] + df["(041)"] + df["(051)"]
-
-            # Remover as colunas (011), (061) e (041) se existirem
-            df.drop(columns=["(011)", "(061)", "(041)", "(051)"], inplace=True, errors="ignore")
-        else:
-            # Se nenhuma das colunas existir, criar a coluna (011+061+041) preenchida com 0
-            df["(011+061+041+051)"] = 0
-
-        # Reordenando as colunas dos impostos conforme a ordem fornecida
-
-        # Padroniza os nomes das colunas para corresponder a impostos_ordem
-        df.columns = [col.split()[0] if col.startswith("(") else col for col in df.columns]
-
-        # Reindexação das colunas
-        colunas_finais = ["Data", "Bloco Caracteres", "Cotiz"] + self.taxes_order + ["Valor Aduana", "Despachante"]
-        df = df.reindex(columns=colunas_finais, fill_value="")
-
-        # Adicionando a fórmula para calcular a análise
-        df["Análise"] = df.index.map(lambda i: f"=L{i+2}-SOMA(D{i+2}:K{i+2})")
+    def save_to_excel(self, data, output_file, pdfs_read_correcty_quantity, sap_excel_file):
+        df = self.create_dataframe_extract(data)
+        sap_df = self.create_dataframe_sap(df, pdfs_read_correcty_quantity)
 
         df.to_excel(output_file, index=False)
-        print(f"Dados salvos em {output_file}")
+        sap_df.to_excel(sap_excel_file, index=False)
 
-        print(df.head())  # Verificar primeiras linhas
-        print("Colunas no DataFrame:", df.columns)
+    def create_dataframe_extract(self, data):
+        taxes_order = [
+            "(010)",
+            "(011+061+041+051)",
+            "(415)",
+            "(422)",
+            "(424)",
+            "(500)",
+            "(900)",
+            "(417)"
+        ]
+        df = pd.DataFrame(data)
+
+        if any(col in df.columns for col in ["(011)", "(061)", "(041)", "(051)"]):
+            df["(011+061+041+051)"] = df["(011)"] + df["(061)"] + df["(041)"] + df["(051)"]
+            df.drop(columns=["(011)", "(061)", "(041)", "(051)"], inplace=True, errors="ignore")
+        else:
+            df["(011+061+041+051)"] = 0
+
+        df.columns = [col.split()[0] if col.startswith("(") else col for col in df.columns]
+        colunas_finais = ["Data", "Bloco Caracteres", "Cotiz"] + taxes_order + ["Valor Aduana", "Despachante"]
+        df = df.reindex(columns=colunas_finais, fill_value="")
+        df["Análise"] = df.index.map(lambda i: f"=L{i+2}-SOMA(D{i+2}:K{i+2})")
+
+        return df
+
+    def create_dataframe_sap(self, df, pdfs_read_correcty_quantity):
+        excel_rows = []
+
+        for pdf in range(pdfs_read_correcty_quantity):
+            cotiz = df["Cotiz"].iloc[pdf]
+            derechos_importacion_010 = df["(010)"].iloc[pdf] * cotiz if not df["(010)"].iloc[pdf] == "" and not pd.isna(df["(010)"].iloc[pdf]) else 0
+            tasa_estadisticas = df["(011+061+041+051)"].iloc[pdf] * cotiz if not df["(011+061+041+051)"].iloc[pdf] == "" else 0
+            iva_415 = df["(415)"].iloc[pdf] * cotiz if not df["(415)"].iloc[pdf] == "" and not pd.isna(df["(415)"].iloc[pdf]) else 0
+            iva_adicional_inscr_422 = df["(422)"].iloc[pdf] * cotiz if not df["(422)"].iloc[pdf] == "" and not pd.isna(df["(422)"].iloc[pdf]) else 0
+            imp_a_las_ganancias_424 = df["(424)"].iloc[pdf] * cotiz if not df["(424)"].iloc[pdf] == "" and not pd.isna(df["(424)"].iloc[pdf]) else 0
+            arancel_sim_impo_500 = df["(500)"].iloc[pdf] * cotiz if not df["(500)"].iloc[pdf] == "" and not pd.isna(df["(500)"].iloc[pdf]) else 0
+            ingresos_brutos_900 = df["(900)"].iloc[pdf] * cotiz if not df["(900)"].iloc[pdf] == "" and not pd.isna(df["(900)"].iloc[pdf]) else 0
+            impuestos_internos_417 = df["(417)"].iloc[pdf] * cotiz if not df["(417)"].iloc[pdf] == "" and not pd.isna(df["(417)"].iloc[pdf]) else 0
+            total_part = derechos_importacion_010 + tasa_estadisticas + iva_415 + iva_adicional_inscr_422
+            total_part += imp_a_las_ganancias_424 + arancel_sim_impo_500 + ingresos_brutos_900 + impuestos_internos_417
+            tax_010 = df["(010)"].iloc[pdf] if not df["(010)"].iloc[pdf] == "" and not pd.isna(df["(010)"].iloc[pdf]) else 0
+            tax_sum = df["(011+061+041+051)"].iloc[pdf] if not df["(011+061+041+051)"].iloc[pdf] == "" else 0
+            tax_500 = df["(500)"].iloc[pdf] if not df["(500)"].iloc[pdf] == "" and not pd.isna(df["(500)"].iloc[pdf]) else 0
+            impuestos_column = []
+            cta_mayor_column = []
+            importe_moneda_column = []
+            ind_impuestos_column = []
+            tax_object_column = []
+            total = [Decimal(total_part).quantize(Decimal('0.01'), rounding=ROUND_UP)]
+            costos_indirectos = [Decimal(( tax_010 + tax_sum + tax_500 ) * cotiz).quantize(Decimal('0.01'), rounding=ROUND_UP)]
+            custom_broker = [df["Despachante"].iloc[pdf]]
+            name = [df["Bloco Caracteres"].iloc[pdf]]
+            date = [df["Data"].iloc[pdf]]
+
+            if iva_415 != 0:
+                impuestos_column.append("( 415 ) I.V.A")
+                cta_mayor_column.append("2500001")
+                importe_moneda_column.append(Decimal(iva_415).quantize(Decimal('0.01'), rounding=ROUND_UP))
+                ind_impuestos_column.append("C0")
+                tax_object_column.append("IV04")
+
+            if iva_adicional_inscr_422 != 0:
+                impuestos_column.append("( 422 ) IVA ADICIONAL INSCR")
+                cta_mayor_column.append("2500000")
+                importe_moneda_column.append(Decimal(iva_adicional_inscr_422).quantize(Decimal('0.01'), rounding=ROUND_UP))
+                ind_impuestos_column.append("C0")
+                tax_object_column.append("")
+
+            if ingresos_brutos_900 != 0:
+                impuestos_column.append("( 900 ) INGRESOS BRUTOS")
+                cta_mayor_column.append("2500007")
+                importe_moneda_column.append(Decimal(ingresos_brutos_900).quantize(Decimal('0.01'), rounding=ROUND_UP))
+                ind_impuestos_column.append("C0")
+                tax_object_column.append("IB03")
+
+            if imp_a_las_ganancias_424 != 0:
+                impuestos_column.append("( 424 ) IMP. A LAS GANANCIAS")
+                cta_mayor_column.append("2500011")
+                importe_moneda_column.append(Decimal(imp_a_las_ganancias_424).quantize(Decimal('0.01'), rounding=ROUND_UP))
+                ind_impuestos_column.append("C0")
+                tax_object_column.append("RT03")
+
+            if impuestos_internos_417 != 0:
+                impuestos_column.append("( 417 ) IMPUESTOS INTERNOS")
+                cta_mayor_column.append("2500001")
+                importe_moneda_column.append(Decimal(impuestos_internos_417).quantize(Decimal('0.01'), rounding=ROUND_UP))
+                ind_impuestos_column.append("C0")
+                tax_object_column.append("IIC2")
+
+            for i in range(1, len(impuestos_column)):
+                total.append(Decimal('NaN'))
+                costos_indirectos.append(Decimal('NaN'))
+                custom_broker.append("")
+                name.append("")
+                date.append("")
+
+            impuestos_column.append("")
+            cta_mayor_column.append("")
+            importe_moneda_column.append("")
+            ind_impuestos_column.append("")
+            tax_object_column.append("")
+            total.append(Decimal('NaN'))
+            costos_indirectos.append(Decimal('NaN'))
+            custom_broker.append("")
+            name.append("")
+            date.append("")
+
+            data_row = {
+                "Impuestos": impuestos_column,
+                "Cta Mayor (SAP)": cta_mayor_column,
+                "Importe moneda doc.": importe_moneda_column ,
+                "Ind. Impuestos": ind_impuestos_column,
+                "Tax Object": tax_object_column,
+                "Total": total,
+                "Costos Indirectos":costos_indirectos,
+                "Despachante": custom_broker,
+                "Nome": name,
+                "Data": date
+            }
+
+            excel_rows.append(data_row)
+
+        sap_dataframe = pd.DataFrame(excel_rows)
+        return sap_dataframe.explode(
+            ["Impuestos", "Cta Mayor (SAP)", "Importe moneda doc.", "Ind. Impuestos", "Tax Object", "Total", "Costos Indirectos", "Despachante", "Nome", "Data"]
+        )
