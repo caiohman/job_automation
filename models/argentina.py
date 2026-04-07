@@ -203,19 +203,19 @@ class Argentina():
 
         for pdf in range(pdfs_read_correcty_quantity):
             cotiz = df["Cotiz"].iloc[pdf]
-            derechos_importacion_010 = df["(010)"].iloc[pdf] * cotiz if not df["(010)"].iloc[pdf] == "" and not pd.isna(df["(010)"].iloc[pdf]) else 0
-            tasa_estadisticas = df["(011+061+041+051)"].iloc[pdf] * cotiz if not df["(011+061+041+051)"].iloc[pdf] == "" else 0
+            tax_010 = df["(010)"].iloc[pdf] if not df["(010)"].iloc[pdf] == "" and not pd.isna(df["(010)"].iloc[pdf]) else 0
+            tax_sum = df["(011+061+041+051)"].iloc[pdf] if not df["(011+061+041+051)"].iloc[pdf] == "" else 0
+            tax_500 = df["(500)"].iloc[pdf] if not df["(500)"].iloc[pdf] == "" and not pd.isna(df["(500)"].iloc[pdf]) else 0
+            derechos_importacion_010 = tax_010 * cotiz
+            tasa_estadisticas = tax_sum * cotiz
             iva_415 = df["(415)"].iloc[pdf] * cotiz if not df["(415)"].iloc[pdf] == "" and not pd.isna(df["(415)"].iloc[pdf]) else 0
             iva_adicional_inscr_422 = df["(422)"].iloc[pdf] * cotiz if not df["(422)"].iloc[pdf] == "" and not pd.isna(df["(422)"].iloc[pdf]) else 0
             imp_a_las_ganancias_424 = df["(424)"].iloc[pdf] * cotiz if not df["(424)"].iloc[pdf] == "" and not pd.isna(df["(424)"].iloc[pdf]) else 0
-            arancel_sim_impo_500 = df["(500)"].iloc[pdf] * cotiz if not df["(500)"].iloc[pdf] == "" and not pd.isna(df["(500)"].iloc[pdf]) else 0
+            arancel_sim_impo_500 = tax_500 * cotiz
             ingresos_brutos_900 = df["(900)"].iloc[pdf] * cotiz if not df["(900)"].iloc[pdf] == "" and not pd.isna(df["(900)"].iloc[pdf]) else 0
             impuestos_internos_417 = df["(417)"].iloc[pdf] * cotiz if not df["(417)"].iloc[pdf] == "" and not pd.isna(df["(417)"].iloc[pdf]) else 0
             total_part = derechos_importacion_010 + tasa_estadisticas + iva_415 + iva_adicional_inscr_422
             total_part += imp_a_las_ganancias_424 + arancel_sim_impo_500 + ingresos_brutos_900 + impuestos_internos_417
-            tax_010 = df["(010)"].iloc[pdf] if not df["(010)"].iloc[pdf] == "" and not pd.isna(df["(010)"].iloc[pdf]) else 0
-            tax_sum = df["(011+061+041+051)"].iloc[pdf] if not df["(011+061+041+051)"].iloc[pdf] == "" else 0
-            tax_500 = df["(500)"].iloc[pdf] if not df["(500)"].iloc[pdf] == "" and not pd.isna(df["(500)"].iloc[pdf]) else 0
             impuestos_column = []
             cta_mayor_column = []
             importe_moneda_column = []
