@@ -3,7 +3,9 @@ from selenium import webdriver  # type: ignore
 from selenium.webdriver.common.by import By  # type: ignore
 from selenium.webdriver.common.keys import Keys  # type: ignore
 from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
+from selenium.webdriver.support.ui import Select  # type: ignore
 from selenium.webdriver.support import expected_conditions as EC  # type: ignore
+from sidom.sidom_argentina import SidomArgentina
 
 class Sidom():
     def __init__(self, username, password) -> None:
@@ -19,17 +21,20 @@ class Sidom():
         try:
             login_field = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "user")))
             login_field.send_keys(self.username)
-
             password_field = driver.find_element(By.NAME, "pass")
             password_field.send_keys(self.password)
             password_field.send_keys(Keys.RETURN)
 
         except Exception as e:
-            print(f"Erro ao fazer login: {str(e)}")
+            print(e)
             driver.quit()
 
         try:
-            WebDriverWait(driver, 300).until(EC.presence_of_element_located((By.TAG_NAME, "select")))
+            select_country = Select(WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "select"))))
+            argentina = SidomArgentina() # create selection to choose the country
+            select_country.select_by_value(value = argentina.get_sidom_argentina_code())
+            submit_button = driver.find_element(By.CSS_SELECTOR, "input[type='submit']")
+            submit_button.click()
         except Exception as e:
-            print(f"Erro ao aguardar a resolução do CAPTCHA: {e}")
+            print(e)
             driver.quit()
