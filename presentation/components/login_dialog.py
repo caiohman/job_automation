@@ -5,6 +5,9 @@ class LoginDialog(QtWidgets.QDialog):
     def __init__(self) -> None:
         super().__init__()
 
+        self.country = None
+        self.process = None
+
         user = QtWidgets.QLabel("Username")
         self.user_input = QtWidgets.QLineEdit()
 
@@ -29,4 +32,12 @@ class LoginDialog(QtWidgets.QDialog):
 
         if username != '' and password != '':
             sidom = Sidom(username, password)
+
+            if self.country is not None and self.process is not None :
+                sidom.get_cases(self.country, self.process)
+
             sidom.connection()
+
+    def get_country_process(self, country, process):
+        self.country = country
+        self.process = process

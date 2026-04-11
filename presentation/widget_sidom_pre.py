@@ -1,6 +1,5 @@
 from PySide6 import QtCore, QtWidgets
 from presentation.components.login_dialog import LoginDialog
-from sidom.sidom import Sidom
 
 class WidgetSidomPre(QtWidgets.QWidget):
     def __init__(self, widget, actual_page, last_page, first_page) -> None:
@@ -11,10 +10,28 @@ class WidgetSidomPre(QtWidgets.QWidget):
         self.first_page = first_page
         self.last_page = last_page
 
+        self.process_chosen_index = None
+        self.country_chosen_index = None
+
+        country_button = QtWidgets.QComboBox()
+        country_button.setPlaceholderText("choose country")
+        country_button.addItems(self.country_names(None))
+        country_button.activated.connect(self.country_chosen)
+
+        process_button = QtWidgets.QComboBox()
+        process_button.setPlaceholderText("choose process")
+        process_button.addItems(self.process_names(None))
+        process_button.activated.connect(self.process_chosen)
+
         login_button = QtWidgets.QPushButton("Sidom Login")
         login_button.clicked.connect(self.login)
 
+        options_layout = QtWidgets.QHBoxLayout()
+        options_layout.addWidget(country_button)
+        options_layout.addWidget(process_button)
+
         general_layout = QtWidgets.QVBoxLayout()
+        general_layout.addLayout(options_layout)
         general_layout.addWidget(login_button)
         general_layout.addLayout(self.createLayout())
 
@@ -52,5 +69,29 @@ class WidgetSidomPre(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def login(self):
-        login_dialog = LoginDialog()
-        login_dialog.exec()
+        if self.process_chosen_index is not None and self.country_chosen_index is not None :
+            login_dialog = LoginDialog()
+            login_dialog.get_country_process(self.country_names(self.country_chosen_index), self.process_names(self.process_chosen_index))
+            login_dialog.exec()
+
+    def country_names(self, index):
+        countries = ["Argentina", "Paraguai", "Chile", "Bolivia"]
+        if index is None:
+            return countries
+        else:
+            return countries[index]
+
+    def process_names(self, index):
+        processes = ["Destination", "Vendor", "Broker"]
+        if index is None:
+            return processes
+        else:
+            return processes[index]
+
+    @QtCore.Slot()
+    def country_chosen(self, result):
+        self.country_chosen_index = int(result)
+
+    @QtCore.Slot()
+    def process_chosen(self, result):
+        self.process_chosen_index = int(result)

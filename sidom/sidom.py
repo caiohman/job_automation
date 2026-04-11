@@ -13,6 +13,13 @@ class Sidom():
         self.username = username
         self.password = password
 
+        self.country = None
+        self.process = None
+
+    def get_cases(self, country, process):
+        self.country = country
+        self.process = process
+
     def connection(self):
         driver = webdriver.Chrome()
         driver.get(self.url)
@@ -35,6 +42,10 @@ class Sidom():
             select_country.select_by_value(value = argentina.get_sidom_argentina_code())
             submit_button = driver.find_element(By.CSS_SELECTOR, "input[type='submit']")
             submit_button.click()
+            popover_close = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.CLASS_NAME, "wt-btn-back"))
+            )
+            popover_close.click()
         except Exception as e:
             print(e)
             driver.quit()
