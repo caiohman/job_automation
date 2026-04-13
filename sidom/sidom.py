@@ -5,7 +5,7 @@ from selenium.webdriver.common.keys import Keys  # type: ignore
 from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
 from selenium.webdriver.support.ui import Select  # type: ignore
 from selenium.webdriver.support import expected_conditions as EC  # type: ignore
-from sidom.sidom_argentina import SidomArgentina
+from sidom.classes.sidom_argentina import SidomArgentina
 
 class Sidom():
     def __init__(self, username, password) -> None:

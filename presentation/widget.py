@@ -1,16 +1,14 @@
 from PySide6 import QtCore, QtWidgets
 from models.argentina import Argentina
+from presentation.classes.page import Page
 from presentation.extration_feedback_dialog import ExtrationFeedbackDialog
 
 class Widget(QtWidgets.QWidget):
 
-    def __init__(self, widget, actual_page, last_page, first_page) -> None:
+    def __init__(self, widget, page : Page) -> None:
         super().__init__()
-
         self.widget = widget
-        self.actual_page = actual_page
-        self.first_page = first_page
-        self.last_page = last_page
+        self.page  = page
         self.pdfs_directory = ""
         self.result_directory = ""
 
@@ -54,7 +52,7 @@ class Widget(QtWidgets.QWidget):
         back_button.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_ArrowBack))
         back_button.setFixedSize(30, 30)
         back_button.clicked.connect(self.change_down)
-        back_button.setEnabled(False) if self.actual_page == self.first_page else back_button.setEnabled(True)
+        back_button.setEnabled(False) if self.page.actual == self.page.first else back_button.setEnabled(True)
         return back_button
 
     def create_forward_button(self):
@@ -62,7 +60,7 @@ class Widget(QtWidgets.QWidget):
         forward_button.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_ArrowForward))
         forward_button.setFixedSize(30, 30)
         forward_button.clicked.connect(self.change_up)
-        forward_button.setEnabled(False) if self.actual_page == self.last_page else forward_button.setEnabled(True)
+        forward_button.setEnabled(False) if self.page.actual == self.page.last else forward_button.setEnabled(True)
         return forward_button
 
     def createLayout(self):

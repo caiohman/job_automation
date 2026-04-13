@@ -3,17 +3,19 @@ from presentation.widget import Widget
 import sys
 from presentation.widget_sidom_pos import WidgetSidomPos
 from presentation.widget_sidom_pre import WidgetSidomPre
+from presentation.classes.page import Page
 
 class Screen():
     def __init__(self) -> None:
-        first_page = 1
-        last_page = 3
-
+        page = Page(3, 1)
         app = QtWidgets.QApplication([])
         widget = QtWidgets.QStackedWidget()
-        widget.addWidget(WidgetSidomPre(widget, actual_page=1, last_page=last_page, first_page=first_page))
-        widget.addWidget(Widget(widget, actual_page=2, last_page=last_page, first_page=first_page))
-        widget.addWidget(WidgetSidomPos(widget, actual_page=3, last_page=last_page, first_page=first_page))
+        page.set_actual_page(1)
+        widget.addWidget(WidgetSidomPre(widget,page))
+        page.set_actual_page(2)
+        widget.addWidget(Widget(widget,page))
+        page.set_actual_page(3)
+        widget.addWidget(WidgetSidomPos(widget, page))
         widget.resize(200,200)
         widget.show()
         sys.exit(app.exec())

@@ -2,3 +2,5 @@ models/__pycache__
 presentation/__pycache__
 presentation/components/__pycache__
 sidom/__pycache__/
+presentation/classes/__pycache__/
+sidom/classes/__pycache__/
