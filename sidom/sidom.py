@@ -46,6 +46,9 @@ class Sidom():
                 EC.element_to_be_clickable((By.CLASS_NAME, "wt-btn-back"))
             )
             popover_close.click()
+            time.sleep(5)
+            profile_destination = Select(WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "selectPerfilesGen"))))
+            profile_destination.select_by_value(value= argentina.get_destination_code())
         except Exception as e:
             print(e)
             driver.quit()

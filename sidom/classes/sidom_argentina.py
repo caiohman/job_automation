@@ -10,3 +10,9 @@ class SidomArgentina():
 
     def get_sidom_argentina_name(self) -> str:
        return "CERVECERIA Y MALTERIA QUILMES"
+
+    def get_destination_code(self) -> str:
+        return "244"
+
+    def get_destination_name(self) -> str:
+        return "00.Destinacion"
